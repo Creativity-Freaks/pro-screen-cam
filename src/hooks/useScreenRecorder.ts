@@ -33,6 +33,11 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
       clearError();
       setState('processing');
 
+      // Check if APIs are supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        throw new Error('Screen recording is not supported in this browser. Please use Chrome, Firefox, or Edge with HTTPS.');
+      }
+
       // Get screen capture
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
