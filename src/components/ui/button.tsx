@@ -18,6 +18,9 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        recording: "bg-gradient-recording text-recording-foreground hover:bg-recording/90 shadow-recording animate-pulse-recording",
+        live: "bg-live text-live-foreground hover:bg-live/90 shadow-glow",
+        preview: "bg-gradient-glass backdrop-blur-sm text-foreground border border-border/50 hover:bg-gradient-glass",
       },
       size: {
         default: "h-10 px-4 py-2",
