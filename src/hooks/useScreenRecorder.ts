@@ -8,11 +8,18 @@ export interface UseScreenRecorderReturn {
   duration: number;
   error: string | null;
   previewStream: MediaStream | null;
+  isVoiceEnabled: boolean;
+  isFaceVideoEnabled: boolean;
+  isPreviewing: boolean;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
   pauseRecording: () => void;
   resumeRecording: () => void;
   downloadRecording: () => void;
+  startPreview: () => Promise<void>;
+  stopPreview: () => void;
+  toggleVoice: () => void;
+  toggleFaceVideo: () => void;
 }
 
 export const useScreenRecorder = (): UseScreenRecorderReturn => {
@@ -20,62 +27,108 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const [isFaceVideoEnabled, setIsFaceVideoEnabled] = useState(true);
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const webcamStreamRef = useRef<MediaStream | null>(null);
 
   const clearError = useCallback(() => setError(null), []);
+
+  const getMediaStreams = async () => {
+    // Check if APIs are supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      throw new Error('Screen recording is not supported in this browser. Please use Chrome, Firefox, or Edge with HTTPS.');
+    }
+
+    // Get screen capture
+    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: isVoiceEnabled
+    });
+
+    // Get webcam stream
+    let webcamStream: MediaStream | null = null;
+    if (isFaceVideoEnabled) {
+      try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 320, height: 240 },
+          audio: false // Don't get audio from webcam to avoid echo
+        });
+        webcamStreamRef.current = webcamStream;
+      } catch (webcamError) {
+        console.warn('Webcam access denied or unavailable:', webcamError);
+      }
+    }
+
+    // Combine streams
+    const combinedStream = new MediaStream();
+    
+    // Add screen video track
+    screenStream.getVideoTracks().forEach(track => {
+      combinedStream.addTrack(track);
+    });
+
+    // Add audio tracks if voice is enabled
+    if (isVoiceEnabled) {
+      screenStream.getAudioTracks().forEach(track => {
+        combinedStream.addTrack(track);
+      });
+    }
+
+    return { combinedStream, screenStream, webcamStream };
+  };
+
+  const startPreview = useCallback(async () => {
+    try {
+      clearError();
+      const { combinedStream } = await getMediaStreams();
+      streamRef.current = combinedStream;
+      setPreviewStream(combinedStream);
+      setIsPreviewing(true);
+    } catch (err) {
+      console.error('Error starting preview:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start preview');
+    }
+  }, [isVoiceEnabled, isFaceVideoEnabled, clearError]);
+
+  const stopPreview = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (webcamStreamRef.current) {
+      webcamStreamRef.current.getTracks().forEach(track => track.stop());
+      webcamStreamRef.current = null;
+    }
+    setPreviewStream(null);
+    setIsPreviewing(false);
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {
       clearError();
       setState('processing');
 
-      // Check if APIs are supported
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        throw new Error('Screen recording is not supported in this browser. Please use Chrome, Firefox, or Edge with HTTPS.');
-      }
-
-      // Get screen capture
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true
-      });
-
-      // Get webcam stream
+      let combinedStream: MediaStream;
+      let screenStream: MediaStream;
       let webcamStream: MediaStream | null = null;
-      try {
-        webcamStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 320, height: 240 },
-          audio: true
-        });
-      } catch (webcamError) {
-        console.warn('Webcam access denied or unavailable:', webcamError);
+
+      // If already previewing, use existing stream, otherwise get new streams
+      if (isPreviewing && streamRef.current) {
+        combinedStream = streamRef.current;
+      } else {
+        const streams = await getMediaStreams();
+        combinedStream = streams.combinedStream;
+        screenStream = streams.screenStream;
+        webcamStream = streams.webcamStream;
+        streamRef.current = combinedStream;
+        setPreviewStream(combinedStream);
       }
-
-      // Combine streams
-      const combinedStream = new MediaStream();
-      
-      // Add screen video track
-      screenStream.getVideoTracks().forEach(track => {
-        combinedStream.addTrack(track);
-      });
-
-      // Add audio tracks (screen and/or microphone)
-      screenStream.getAudioTracks().forEach(track => {
-        combinedStream.addTrack(track);
-      });
-
-      if (webcamStream) {
-        webcamStream.getAudioTracks().forEach(track => {
-          combinedStream.addTrack(track);
-        });
-      }
-
-      streamRef.current = combinedStream;
-      setPreviewStream(combinedStream);
 
       // Set up MediaRecorder
       const mediaRecorder = new MediaRecorder(combinedStream, {
@@ -105,17 +158,18 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
           intervalRef.current = null;
         }
 
-        // Clean up streams
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
+        // Clean up streams only if not previewing
+        if (!isPreviewing) {
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+          }
+          if (webcamStreamRef.current) {
+            webcamStreamRef.current.getTracks().forEach(track => track.stop());
+            webcamStreamRef.current = null;
+          }
+          setPreviewStream(null);
         }
-        if (webcamStream) {
-          webcamStream.getTracks().forEach(track => track.stop());
-        }
-        screenStream.getTracks().forEach(track => track.stop());
-        
-        setPreviewStream(null);
         setState('idle');
       };
 
@@ -127,7 +181,7 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
       setError(err instanceof Error ? err.message : 'Failed to start recording');
       setState('idle');
     }
-  }, [clearError]);
+  }, [clearError, isPreviewing, isVoiceEnabled, isFaceVideoEnabled]);
 
   const stopRecording = useCallback(async () => {
     if (mediaRecorderRef.current && state === 'recording') {
@@ -175,16 +229,41 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
     }
   }, []);
 
+  const toggleVoice = useCallback(() => {
+    setIsVoiceEnabled(prev => !prev);
+    if (isPreviewing) {
+      // Restart preview with new settings
+      stopPreview();
+      setTimeout(() => startPreview(), 100);
+    }
+  }, [isPreviewing, stopPreview, startPreview]);
+
+  const toggleFaceVideo = useCallback(() => {
+    setIsFaceVideoEnabled(prev => !prev);
+    if (isPreviewing) {
+      // Restart preview with new settings
+      stopPreview();
+      setTimeout(() => startPreview(), 100);
+    }
+  }, [isPreviewing, stopPreview, startPreview]);
+
   return {
     state,
     isRecording: state === 'recording',
     duration,
     error,
     previewStream,
+    isVoiceEnabled,
+    isFaceVideoEnabled,
+    isPreviewing,
     startRecording,
     stopRecording,
     pauseRecording,
     resumeRecording,
     downloadRecording,
+    startPreview,
+    stopPreview,
+    toggleVoice,
+    toggleFaceVideo,
   };
 };

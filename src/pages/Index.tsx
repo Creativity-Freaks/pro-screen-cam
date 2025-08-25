@@ -12,11 +12,18 @@ const Index = () => {
     duration,
     error,
     previewStream,
+    isVoiceEnabled,
+    isFaceVideoEnabled,
+    isPreviewing,
     startRecording,
     stopRecording,
     pauseRecording,
     resumeRecording,
     downloadRecording,
+    startPreview,
+    stopPreview,
+    toggleVoice,
+    toggleFaceVideo,
   } = useScreenRecorder();
 
   const hasRecording = duration > 0 && state === 'idle';
@@ -94,6 +101,13 @@ const Index = () => {
                 onResume={resumeRecording}
                 onDownload={downloadRecording}
                 hasRecording={hasRecording}
+                isVoiceEnabled={isVoiceEnabled}
+                isFaceVideoEnabled={isFaceVideoEnabled}
+                isPreviewing={isPreviewing}
+                onToggleVoice={toggleVoice}
+                onToggleFaceVideo={toggleFaceVideo}
+                onStartPreview={startPreview}
+                onStopPreview={stopPreview}
               />
             </Card>
           </div>
