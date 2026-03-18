@@ -1,7 +1,7 @@
 {
   "name": "pro-screen-cam",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ProScreenCam - screen recorder with audio + optional webcam PiP",
   "type": "module",
   "main": "electron/main.cjs",
