@@ -4,6 +4,9 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Electron loads the built UI from file://, so asset URLs must be relative.
+  // Keep web builds using absolute base for normal hosting (Vercel).
+  base: mode === "desktop" ? "./" : "/",
   server: {
     host: "::",
     port: 8080,

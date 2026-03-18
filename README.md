@@ -108,6 +108,8 @@ npm run desktop:build
 
 Artifacts are generated in `release/` (and are gitignored).
 
+Note: desktop packaging uses a special build mode so asset paths work with `file://`.
+
 ## Release (Publish installers to GitHub)
 
 This repo is configured to publish installers automatically via GitHub Actions when you push a tag that starts with `v`.
