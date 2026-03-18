@@ -46,3 +46,43 @@ npm run build
 - Microphone/Webcam require explicit user permission.
 - If you click “Stop sharing” from the browser UI, recording/preview will stop automatically.
 
+## Deploy (Vercel)
+
+- Import this GitHub repo in Vercel
+- Framework preset: Vite
+- Build command: `npm run build`
+- Output directory: `dist`
+
+React Router SPA fallback is configured via [vercel.json](vercel.json).
+
+## Desktop App (Windows / macOS / Linux)
+
+This repo includes an Electron wrapper so users can install it like a native app.
+
+### Run desktop app in dev
+
+```bash
+npm install
+npm run desktop:dev
+```
+
+### Build installers locally
+
+```bash
+npm install
+npm run desktop:build
+```
+
+Artifacts will be generated in the `release/` folder.
+
+### Publish installers automatically (GitHub Releases)
+
+Push a version tag like `v1.0.0`:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions will build for Windows/macOS/Linux and attach the installers to the Release.
+

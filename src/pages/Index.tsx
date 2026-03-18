@@ -95,6 +95,19 @@ const Index = () => {
             </Card>
           </div>
         </div>
+
+        <footer className="mt-12 pt-6 border-t border-border/50 text-center text-xs text-muted-foreground">
+          <span>Made with ❤️ by </span>
+
+          <a
+            href="https://cftechlab.hcsarker.me"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-4 hover:text-foreground"
+          >
+            &copy; 2025 CF Tech Lab
+          </a>
+        </footer>
       </div>
     </div>
   );
