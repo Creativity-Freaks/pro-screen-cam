@@ -80,8 +80,8 @@ Artifacts will be generated in the `release/` folder.
 Push a version tag like `v1.0.0`:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v0.1.0
+git push origin v0.1.0
 ```
 
 GitHub Actions will build for Windows/macOS/Linux and attach the installers to the Release.

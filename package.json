@@ -1,7 +1,7 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "pro-screen-cam",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "ProScreenCam - screen recorder with audio + optional webcam PiP",
   "type": "module",
   "main": "electron/main.cjs",
