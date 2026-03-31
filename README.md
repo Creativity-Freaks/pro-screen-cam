@@ -196,3 +196,10 @@ Please report vulnerabilities responsibly.
 MIT License
 
 - [LICENSE](LICENSE)
+
+## Developer
+
+Crafted by [Hridoy Sarker](https://hcsarker.me)
+
+[![Portfolio](https://img.shields.io/badge/Portfolio-hcsarker.me-0ea5e9?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://hcsarker.me)
+[![GitHub](https://img.shields.io/badge/GitHub-@hcsarker-111827?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hcsarker)
