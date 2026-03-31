@@ -94,6 +94,8 @@ npm run dev
 npm run desktop:dev
 ```
 
+If this command fails with a port error, free port `5173` and run again. The desktop dev flow requires that exact port so Electron can attach to the Vite server.
+
 ### Build web
 
 ```bash

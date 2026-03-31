@@ -358,10 +358,31 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
     if (!navigator.mediaDevices?.getDisplayMedia) {
       throw new Error('Screen recording is not supported in this browser.');
     }
-    const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: 30 },
-      audio: true,
-    });
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 30 },
+        audio: isVoiceEnabled,
+      });
+    } catch (err) {
+      const shouldRetryWithoutSystemAudio =
+        isVoiceEnabled && err instanceof DOMException && err.name === 'NotSupportedError';
+
+      if (!shouldRetryWithoutSystemAudio) {
+        throw err;
+      }
+
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 30 },
+        audio: false,
+      });
+
+      showToast({
+        title: 'System audio not supported',
+        description: 'Continuing without system audio. Microphone recording can still work if enabled.',
+      });
+    }
 
     // When user clicks "Stop sharing" in browser UI
     stream.getVideoTracks()[0].onended = () => {
@@ -374,7 +395,7 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
     };
 
     return stream;
-  }, [stopPreview, stopRecording]);
+  }, [isVoiceEnabled, stopPreview, stopRecording]);
 
   const getWebcamStream = async () => {
     try {

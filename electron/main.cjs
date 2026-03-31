@@ -1,5 +1,9 @@
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, desktopCapturer, session, shell } = require("electron");
 const path = require("path");
+
+if (process.platform === "linux") {
+  app.commandLine.appendSwitch("enable-features", "WebRTCPipeWireCapturer");
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -33,6 +37,18 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  session.defaultSession.setDisplayMediaRequestHandler(
+    async (_request, callback) => {
+      try {
+        const sources = await desktopCapturer.getSources({ types: ["screen", "window"] });
+        callback({ video: sources[0], audio: "loopback" });
+      } catch {
+        callback({});
+      }
+    },
+    { useSystemPicker: true }
+  );
+
   createWindow();
 
   app.on("activate", () => {
