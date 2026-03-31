@@ -1,151 +1,198 @@
-
 # ProScreenCam
 
-ProScreenCam is a screen recorder that can capture:
+[![Animated ProScreenCam heading](https://readme-typing-svg.demolab.com?font=Space+Grotesk&weight=700&size=26&duration=2500&pause=900&color=22D3EE&center=true&vCenter=true&width=920&lines=%F0%9F%96%A5%EF%B8%8F+ProScreenCam+%E2%80%94+Professional+Screen+Recorder;%F0%9F%8E%99%EF%B8%8F+Screen+%2B+System+Audio+%2B+Mic+%2B+Webcam+PiP;%E2%9A%A1+Desktop-first+capture+workflow+for+creators+and+teams)](https://github.com/Creativity-Freaks/pro-screen-cam)
 
-- Screen/Window/Tab video
-- System/tab audio (when supported)
+[![Latest Release](https://img.shields.io/github/v/release/Creativity-Freaks/pro-screen-cam?style=for-the-badge&logo=github&label=Latest%20Release)](https://github.com/Creativity-Freaks/pro-screen-cam/releases)
+[![Desktop Build](https://img.shields.io/github/actions/workflow/status/Creativity-Freaks/pro-screen-cam/release.yml?style=for-the-badge&logo=githubactions&label=Desktop%20Build)](https://github.com/Creativity-Freaks/pro-screen-cam/actions/workflows/release.yml)
+[![MIT License](https://img.shields.io/badge/License-MIT-0ea5e9?style=for-the-badge)](LICENSE)
+
+ProScreenCam is a modern screen recorder for web and desktop that captures:
+
+- Screen, window, or tab video
+- System or tab audio (when available)
 - Optional microphone audio
-- Optional webcam PiP (face video)
+- Optional webcam picture-in-picture overlay
 
-Built with Vite + React + TypeScript for web, and bundled as an installable desktop app via Electron.
+Built with Vite, React, and TypeScript, then packaged with Electron for production desktop distribution.
 
-## Download & Install (Desktop)
+## Why ProScreenCam
 
-You can download installers from GitHub Releases:
+- Studio-style capture controls with a clean interface
+- Desktop source picker with screen and window views
+- Floating mini recording controller (pause/resume/stop with timer)
+- Browser mode for instant usage without installation
+- One-click release pipeline for Windows, macOS, and Linux
 
-- Releases page: https://github.com/Creativity-Freaks/pro-screen-cam/releases
+## Desktop Install Guide
 
-For each version, open the release and download the asset for your OS:
+Download all official installers from the Releases page:
 
-### Windows
+- [GitHub Releases](https://github.com/Creativity-Freaks/pro-screen-cam/releases)
 
-- Download the `.exe` installer (NSIS)
-- If Windows SmartScreen warns, click “More info” → “Run anyway” (common for unsigned apps)
+### OS Matrix
 
-### macOS
+| Platform | Installer | File Type | Recommended For |
+| --- | --- | --- | --- |
+| Windows | NSIS setup | .exe | Standard install experience |
+| macOS | Disk image | .dmg | Drag-and-drop app installation |
+| Linux | Portable package | .AppImage | Quick run without system install |
+| Linux (Debian/Ubuntu) | Debian package | .deb | Native package management |
 
-- Download the `.dmg`
-- If Gatekeeper blocks it (unsigned app), open **System Settings → Privacy & Security** and allow the app
+### Windows Installation
 
-### Linux
+1. Open the latest release.
+2. Download the Windows .exe installer.
+3. Run the installer and complete setup.
+4. If SmartScreen appears, choose More info, then Run anyway.
 
-- `.AppImage` (portable):
+### macOS Installation
 
-	```bash
-	chmod +x ProScreenCam-*.AppImage
-	./ProScreenCam-*.AppImage
-	```
+1. Open the latest release.
+2. Download the .dmg file.
+3. Open the DMG and drag ProScreenCam into Applications.
+4. If macOS blocks launch on first run:
+   Open System Settings > Privacy and Security and allow the app.
 
-- `.deb` (Debian/Ubuntu):
+### Linux Installation
 
-	```bash
-	sudo apt install ./ProScreenCam_*_amd64.deb
-	```
+AppImage (portable):
 
-## Use (Web)
+```bash
+chmod +x ProScreenCam-*.AppImage
+./ProScreenCam-*.AppImage
+```
 
-The web app runs in the browser and records to a local `.webm` file.
+Deb package (Debian or Ubuntu):
 
-1. Click **Start**
-2. Select what to share (Screen/Window/Tab)
-3. If you want system/tab audio, ensure you enable “Share audio” in the share dialog (Chrome-based browsers)
-4. Optionally enable mic/webcam in the app before starting
-5. Click **Stop** to finish and download
+```bash
+sudo apt install ./ProScreenCam_*_amd64.deb
+```
 
-## Browser Support Notes
+## First Run Checklist (Desktop)
 
-- Screen capture uses `navigator.mediaDevices.getDisplayMedia()`.
-- “System audio” capture availability depends on OS + browser + what you pick (Tab vs Window vs Screen).
-	- Chrome/Edge: best support (especially for tab audio)
-	- Firefox/Safari: system audio may not be available
-- Webcam/microphone always require explicit permissions.
+For best results on any OS:
 
-## Deploy (Vercel)
+1. Allow screen capture permission when prompted.
+2. Allow microphone and camera only if you want voice or face video.
+3. For system audio, enable share audio in the source picker when supported.
+4. Use Start Preview before Start Recording to verify source and audio.
 
-1. Import this GitHub repo in Vercel
-2. Framework preset: **Vite**
-3. Build command: `npm run build`
-4. Output directory: `dist`
+## Web Usage
 
-React Router SPA fallback is configured via [vercel.json](vercel.json).
+Use directly in browser if you do not want desktop installation.
 
-## Develop
+Basic flow:
+
+1. Click Start Preview.
+2. Select what to share.
+3. Enable voice or face video if needed.
+4. Click Start Recording.
+5. Stop and download your recording file.
+
+Browser note:
+
+- System audio support varies by browser and OS.
+- Chrome and Edge typically provide the best screen or tab audio support.
+
+## Developer Setup
 
 ### Prerequisites
 
-- Node.js 20+ (LTS recommended)
+- Node.js 20 or newer
+- npm
 
-### Install
+### Install Dependencies
 
 ```bash
 npm ci
 ```
 
-### Run web dev server
+### Web Development
 
 ```bash
 npm run dev
 ```
 
-### Run desktop app in dev
+### Desktop Development
 
 ```bash
 npm run desktop:dev
 ```
 
-If this command fails with a port error, free port `5173` and run again. The desktop dev flow requires that exact port so Electron can attach to the Vite server.
+If port 5173 is occupied, free it and run again. Desktop dev mode requires port 5173 for Electron to attach correctly.
 
-Desktop mode includes:
+### Production Build
 
-- A source picker window with separate **Screens** and **Windows** tabs
-- A floating mini controller while recording (timer + pause/resume + stop)
-
-### Build web
+Web build:
 
 ```bash
 npm run build
 ```
 
-### Build desktop installers locally
+Desktop installers (local):
 
 ```bash
 npm run desktop:build
 ```
 
-Artifacts are generated in `release/` (and are gitignored).
+Desktop artifacts are generated in the release directory.
 
-Note: desktop packaging uses a special build mode so asset paths work with `file://`.
+## Release Pipeline
 
-## Release (Publish installers to GitHub)
+This repository publishes desktop installers through GitHub Actions for all major platforms:
 
-This repo is configured to publish installers automatically via GitHub Actions when you push a tag that starts with `v`.
+- Windows
+- macOS
+- Linux
 
-1. Update version in `package.json`
-2. Commit changes to `main`
-3. Tag and push:
+Workflow trigger:
+
+- Push a git tag starting with v (example: v0.1.2)
+
+Release steps:
+
+1. Update the version in package.json.
+2. Commit changes to main.
+3. Create and push a new tag.
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
-Then go to GitHub → **Actions** to watch the build, and GitHub → **Releases** to download the generated installers.
+1. Monitor workflow execution in Actions.
+2. Download installers from the generated release assets.
+
+Workflow file:
+
+- [.github/workflows/release.yml](.github/workflows/release.yml)
+
+## Deployment (Web)
+
+Deploy to Vercel:
+
+1. Import repository in Vercel.
+2. Select Vite preset.
+3. Build command: npm run build.
+4. Output directory: dist.
+
+SPA fallback is configured in [vercel.json](vercel.json).
 
 ## Contributing
 
 Contributions are welcome.
 
-- See [CONTRIBUTING.md](CONTRIBUTING.md)
-- Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## Security
 
-Please report security issues responsibly.
+Please report vulnerabilities responsibly.
 
-See [SECURITY.md](SECURITY.md).
+- [SECURITY.md](SECURITY.md)
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT License
 
+- [LICENSE](LICENSE)
