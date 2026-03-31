@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Choose Source</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "Noto Sans", sans-serif;
+        color: #e5e7eb;
+        background:
+          radial-gradient(circle at top right, rgba(56, 189, 248, 0.14), transparent 42%),
+          radial-gradient(circle at top left, rgba(99, 102, 241, 0.12), transparent 45%),
+          #0b1220;
+      }
+
+      .shell {
+        width: min(980px, 96vw);
+        margin: 0 auto;
+        padding: 18px;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        color: #f8fafc;
+      }
+
+      .subtitle {
+        margin: 4px 0 0;
+        color: #94a3b8;
+        font-size: 14px;
+      }
+
+      .close {
+        border: 1px solid #334155;
+        color: #cbd5e1;
+        background: #0f172a;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 8px;
+      }
+
+      .tab {
+        border: 1px solid #334155;
+        color: #cbd5e1;
+        background: #0f172a;
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .tab.active {
+        border-color: #22d3ee;
+        background: rgba(34, 211, 238, 0.15);
+        color: #e0f2fe;
+      }
+
+      .search {
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: #e2e8f0;
+        border-radius: 10px;
+        padding: 9px 12px;
+        width: 280px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+      }
+
+      .card {
+        border: 1px solid #253347;
+        background: rgba(15, 23, 42, 0.8);
+        border-radius: 14px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        border-color: #22d3ee;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.35);
+      }
+
+      .card.selected {
+        border-color: #06b6d4;
+        box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.28);
+      }
+
+      .preview {
+        width: 100%;
+        height: 128px;
+        background: #111827;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+
+      .preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .label {
+        padding: 10px;
+        font-size: 13px;
+        color: #e2e8f0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .empty {
+        border: 1px dashed #334155;
+        border-radius: 14px;
+        padding: 30px;
+        text-align: center;
+        color: #94a3b8;
+      }
+
+      .footer {
+        margin-top: 16px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .btn {
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn.cancel {
+        color: #cbd5e1;
+        background: #0f172a;
+      }
+
+      .btn.primary {
+        color: #082f49;
+        background: linear-gradient(135deg, #67e8f9, #22d3ee);
+        border-color: #22d3ee;
+      }
+
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="header">
+        <div>
+          <h1 class="title">Choose what to record</h1>
+          <p class="subtitle">Select a screen or app window for preview and recording.</p>
+        </div>
+        <button id="closeBtn" class="close" type="button">Close</button>
+      </div>
+
+      <div class="controls">
+        <div class="tabs">
+          <button id="tabAll" class="tab active" type="button">All</button>
+          <button id="tabScreen" class="tab" type="button">Screens</button>
+          <button id="tabWindow" class="tab" type="button">Windows</button>
+        </div>
+        <input id="search" class="search" type="text" placeholder="Search window title..." />
+      </div>
+
+      <div id="grid" class="grid"></div>
+
+      <div class="footer">
+        <button id="cancelBtn" class="btn cancel" type="button">Cancel</button>
+        <button id="selectBtn" class="btn primary" type="button" disabled>Start Preview</button>
+      </div>
+    </div>
+
+    <script>
+      (() => {
+        const grid = document.getElementById("grid");
+        const searchInput = document.getElementById("search");
+        const selectBtn = document.getElementById("selectBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+        const closeBtn = document.getElementById("closeBtn");
+        const tabAll = document.getElementById("tabAll");
+        const tabScreen = document.getElementById("tabScreen");
+        const tabWindow = document.getElementById("tabWindow");
+
+        let sources = [];
+        let selectedId = null;
+        let activeTab = "all";
+
+        const setActiveTab = (tab) => {
+          activeTab = tab;
+          [tabAll, tabScreen, tabWindow].forEach((btn) => btn.classList.remove("active"));
+          if (tab === "all") tabAll.classList.add("active");
+          if (tab === "screen") tabScreen.classList.add("active");
+          if (tab === "window") tabWindow.classList.add("active");
+          render();
+        };
+
+        const matchesFilter = (source) => {
+          if (activeTab !== "all" && source.type !== activeTab) return false;
+          const q = searchInput.value.trim().toLowerCase();
+          if (!q) return true;
+          return source.name.toLowerCase().includes(q);
+        };
+
+        const render = () => {
+          const visible = sources.filter(matchesFilter);
+
+          if (!visible.length) {
+            grid.innerHTML = '<div class="empty">No source found for this filter.</div>';
+            selectBtn.disabled = !selectedId;
+            return;
+          }
+
+          grid.innerHTML = visible
+            .map((source) => {
+              const selectedClass = source.id === selectedId ? " selected" : "";
+              const media = source.thumbnail
+                ? `<img src="${source.thumbnail}" alt="${source.name}" />`
+                : `<span style="color:#64748b;font-size:13px">No preview</span>`;
+
+              return `
+                <button type="button" class="card${selectedClass}" data-id="${source.id}">
+                  <div class="preview">${media}</div>
+                  <div class="label" title="${source.name}">${source.name}</div>
+                </button>
+              `;
+            })
+            .join("");
+
+          grid.querySelectorAll(".card").forEach((el) => {
+            el.addEventListener("click", () => {
+              selectedId = el.getAttribute("data-id");
+              render();
+            });
+          });
+
+          selectBtn.disabled = !selectedId;
+        };
+
+        const submit = () => {
+          if (!selectedId) return;
+          window.electronApp?.selectDesktopSource?.(selectedId);
+        };
+
+        const cancel = () => {
+          window.electronApp?.cancelDesktopSourcePicker?.();
+        };
+
+        tabAll.addEventListener("click", () => setActiveTab("all"));
+        tabScreen.addEventListener("click", () => setActiveTab("screen"));
+        tabWindow.addEventListener("click", () => setActiveTab("window"));
+        searchInput.addEventListener("input", render);
+        selectBtn.addEventListener("click", submit);
+        cancelBtn.addEventListener("click", cancel);
+        closeBtn.addEventListener("click", cancel);
+
+        window.electronApp?.onDesktopSourceData?.((payload) => {
+          sources = Array.isArray(payload?.sources) ? payload.sources : [];
+          selectedId = sources[0]?.id ?? null;
+          render();
+        });
+      })();
+    </script>
+  </body>
+</html>

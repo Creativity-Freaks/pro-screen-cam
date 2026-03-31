@@ -96,6 +96,11 @@ npm run desktop:dev
 
 If this command fails with a port error, free port `5173` and run again. The desktop dev flow requires that exact port so Electron can attach to the Vite server.
 
+Desktop mode includes:
+
+- A source picker window with separate **Screens** and **Windows** tabs
+- A floating mini controller while recording (timer + pause/resume + stop)
+
 ### Build web
 
 ```bash

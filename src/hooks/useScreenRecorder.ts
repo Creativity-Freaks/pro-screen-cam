@@ -51,6 +51,22 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const isDesktopApp = typeof window !== 'undefined' && !!window.electronApp?.isDesktop;
+
+  const showDesktopController = useCallback((nextState: RecordingState, nextDuration: number) => {
+    if (!isDesktopApp) return;
+    window.electronApp?.showRecordingControl({ state: nextState, duration: nextDuration });
+  }, [isDesktopApp]);
+
+  const updateDesktopController = useCallback((nextState: RecordingState, nextDuration: number) => {
+    if (!isDesktopApp) return;
+    window.electronApp?.updateRecordingControl({ state: nextState, duration: nextDuration });
+  }, [isDesktopApp]);
+
+  const hideDesktopController = useCallback(() => {
+    if (!isDesktopApp) return;
+    window.electronApp?.hideRecordingControl();
+  }, [isDesktopApp]);
 
   useEffect(() => {
     stateRef.current = state;
@@ -61,8 +77,9 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
     return () => {
       stopAllStreams();
       if (intervalRef.current) clearInterval(intervalRef.current);
+      hideDesktopController();
     };
-  }, []);
+  }, [hideDesktopController]);
 
   const stopAllStreams = () => {
     if (compositeRafRef.current) {
@@ -355,33 +372,87 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
   }, []);
 
   const getScreenStream = useCallback(async () => {
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      throw new Error('Screen recording is not supported in this browser.');
-    }
-
     let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: 30 },
-        audio: isVoiceEnabled,
-      });
-    } catch (err) {
-      const shouldRetryWithoutSystemAudio =
-        isVoiceEnabled && err instanceof DOMException && err.name === 'NotSupportedError';
 
-      if (!shouldRetryWithoutSystemAudio) {
-        throw err;
+    if (isDesktopApp && window.electronApp?.chooseDesktopSource) {
+      const selectedSource = await window.electronApp.chooseDesktopSource();
+      if (!selectedSource) {
+        throw new Error('Screen selection cancelled.');
       }
 
-      stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: 30 },
-        audio: false,
-      });
+      const desktopVideoConstraints = {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: selectedSource.id,
+          maxFrameRate: 30,
+        },
+      };
 
-      showToast({
-        title: 'System audio not supported',
-        description: 'Continuing without system audio. Microphone recording can still work if enabled.',
-      });
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: desktopVideoConstraints as unknown as MediaTrackConstraints,
+          audio: isVoiceEnabled
+            ? ({
+                mandatory: {
+                  chromeMediaSource: 'desktop',
+                  chromeMediaSourceId: selectedSource.id,
+                },
+              } as unknown as MediaTrackConstraints)
+            : false,
+        });
+      } catch (err) {
+        const shouldRetryWithoutSystemAudio =
+          isVoiceEnabled && err instanceof DOMException && err.name === 'NotSupportedError';
+
+        if (!shouldRetryWithoutSystemAudio) {
+          throw err;
+        }
+
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: desktopVideoConstraints as unknown as MediaTrackConstraints,
+            audio: false,
+          });
+        } catch {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { frameRate: 30 },
+            audio: false,
+          });
+        }
+
+        showToast({
+          title: 'System audio not supported',
+          description: 'Continuing without system audio. Microphone recording can still work if enabled.',
+        });
+      }
+    } else {
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        throw new Error('Screen recording is not supported in this browser.');
+      }
+
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 30 },
+          audio: isVoiceEnabled,
+        });
+      } catch (err) {
+        const shouldRetryWithoutSystemAudio =
+          isVoiceEnabled && err instanceof DOMException && err.name === 'NotSupportedError';
+
+        if (!shouldRetryWithoutSystemAudio) {
+          throw err;
+        }
+
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 30 },
+          audio: false,
+        });
+
+        showToast({
+          title: 'System audio not supported',
+          description: 'Continuing without system audio. Microphone recording can still work if enabled.',
+        });
+      }
     }
 
     // When user clicks "Stop sharing" in browser UI
@@ -395,7 +466,7 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
     };
 
     return stream;
-  }, [isVoiceEnabled, stopPreview, stopRecording]);
+  }, [isDesktopApp, isVoiceEnabled, stopPreview, stopRecording]);
 
   const getWebcamStream = async () => {
     try {
@@ -547,6 +618,7 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
         setState('recording');
         setDuration(0);
         intervalRef.current = setInterval(() => setDuration(p => p + 1), 1000);
+        showDesktopController('recording', 0);
         showToast({ title: "Recording started" });
       };
 
@@ -559,11 +631,13 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
           setHasRecording(true);
         }
         setState('idle');
+        hideDesktopController();
       };
 
       recorder.onerror = () => {
         setError('Recording failed unexpectedly.');
         setState('idle');
+        hideDesktopController();
         showToast({
           variant: "destructive",
           title: "Recording failed",
@@ -581,8 +655,9 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
       setError(message);
       showToast({ variant: "destructive", title: "Could not start recording", description: message });
       setState('idle');
+      hideDesktopController();
     }
-  }, [getScreenStream, isVoiceEnabled, isFaceVideoEnabled, ensureCompositeStream, ensureMixedAudioTrack]);
+  }, [getScreenStream, isVoiceEnabled, isFaceVideoEnabled, ensureCompositeStream, ensureMixedAudioTrack, hideDesktopController, showDesktopController]);
 
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === 'recording') {
@@ -592,18 +667,53 @@ export const useScreenRecorder = (): UseScreenRecorderReturn => {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      updateDesktopController('paused', duration);
       showToast({ title: "Recording paused" });
     }
-  }, []);
+  }, [duration, updateDesktopController]);
 
   const resumeRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === 'paused') {
       mediaRecorderRef.current.resume();
       setState('recording');
       intervalRef.current = setInterval(() => setDuration(p => p + 1), 1000);
+      updateDesktopController('recording', duration);
       showToast({ title: "Recording resumed" });
     }
-  }, []);
+  }, [duration, updateDesktopController]);
+
+  useEffect(() => {
+    if (state === 'recording' || state === 'paused') {
+      updateDesktopController(state, duration);
+      return;
+    }
+
+    if (state === 'idle') {
+      hideDesktopController();
+    }
+  }, [duration, hideDesktopController, state, updateDesktopController]);
+
+  useEffect(() => {
+    if (!isDesktopApp) {
+      return;
+    }
+
+    const unsubscribe = window.electronApp?.onRecordingControlAction((action) => {
+      if (action === 'pause') {
+        pauseRecording();
+      } else if (action === 'resume') {
+        resumeRecording();
+      } else if (action === 'stop') {
+        void stopRecording();
+      }
+    });
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [isDesktopApp, pauseRecording, resumeRecording, stopRecording]);
 
   const downloadRecording = useCallback(() => {
     if (recordedChunksRef.current.length === 0) return;

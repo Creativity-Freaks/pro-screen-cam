@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recording Controller</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", "Noto Sans", sans-serif;
+        background: #0f1420;
+        color: #e5e7eb;
+      }
+
+      .controller {
+        height: 96px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px;
+        border: 1px solid #263042;
+        border-radius: 10px;
+        background: linear-gradient(160deg, #151a27 0%, #111827 60%, #0f1624 100%);
+        -webkit-app-region: drag;
+      }
+
+      .status {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ef4444;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        animation: pulse 1.5s infinite;
+      }
+
+      .dot.paused {
+        background: #f59e0b;
+        animation: none;
+      }
+
+      .timer {
+        font-size: 20px;
+        font-weight: 700;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        -webkit-app-region: no-drag;
+      }
+
+      button {
+        border: none;
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        color: #f9fafb;
+      }
+
+      #pauseResume {
+        background: #2563eb;
+      }
+
+      #stop {
+        background: #dc2626;
+      }
+
+      button:hover {
+        filter: brightness(1.08);
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controller">
+      <div class="status">
+        <div class="title">
+          <span id="dot" class="dot"></span>
+          <span id="statusText">Recording</span>
+        </div>
+        <div id="timer" class="timer">0:00</div>
+      </div>
+
+      <div class="actions">
+        <button id="pauseResume" type="button">Pause</button>
+        <button id="stop" type="button">Stop</button>
+      </div>
+    </div>
+
+    <script>
+      (() => {
+        const statusText = document.getElementById("statusText");
+        const timerEl = document.getElementById("timer");
+        const pauseResumeBtn = document.getElementById("pauseResume");
+        const stopBtn = document.getElementById("stop");
+        const dotEl = document.getElementById("dot");
+
+        let state = "recording";
+        let duration = 0;
+
+        const formatDuration = (totalSeconds) => {
+          const safeSeconds = Math.max(0, Number(totalSeconds) || 0);
+          const hours = Math.floor(safeSeconds / 3600);
+          const minutes = Math.floor((safeSeconds % 3600) / 60);
+          const seconds = safeSeconds % 60;
+
+          if (hours > 0) {
+            return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+          }
+          return `${minutes}:${String(seconds).padStart(2, "0")}`;
+        };
+
+        const render = () => {
+          timerEl.textContent = formatDuration(duration);
+
+          if (state === "paused") {
+            statusText.textContent = "Paused";
+            pauseResumeBtn.textContent = "Resume";
+            dotEl.classList.add("paused");
+          } else {
+            statusText.textContent = "Recording";
+            pauseResumeBtn.textContent = "Pause";
+            dotEl.classList.remove("paused");
+          }
+        };
+
+        pauseResumeBtn.addEventListener("click", () => {
+          const action = state === "paused" ? "resume" : "pause";
+          window.electronApp?.emitRecordingControlAction?.(action);
+        });
+
+        stopBtn.addEventListener("click", () => {
+          window.electronApp?.emitRecordingControlAction?.("stop");
+        });
+
+        window.electronApp?.onRecordingControlState?.((payload) => {
+          if (!payload || typeof payload !== "object") {
+            return;
+          }
+
+          if (typeof payload.state === "string") {
+            state = payload.state;
+          }
+          if (typeof payload.duration === "number") {
+            duration = payload.duration;
+          }
+
+          render();
+        });
+
+        render();
+      })();
+    </script>
+  </body>
+</html>
